@@ -1,7 +1,5 @@
-// api/appendToSheet.js (repurposed from updateDatabase.js)
 const { google } = require('googleapis');
 
-// Helper to create a standardized response
 const createResponse = (statusCode, body) => ({
   statusCode,
   headers: {
@@ -13,12 +11,9 @@ const createResponse = (statusCode, body) => ({
   body: JSON.stringify(body),
 });
 
-// Helper to authenticate with Google Sheets
 const getGoogleSheetsClient = () => {
   const { GOOGLE_SHEETS_CREDENTIALS } = process.env;
-  if (!GOOGLE_SHEETS_CREDENTIALS) {
-    throw new Error('Missing GOOGLE_SHEETS_CREDENTIALS environment variable');
-  }
+  if (!GOOGLE_SHEETS_CREDENTIALS) throw new Error('Missing GOOGLE_SHEETS_CREDENTIALS');
   const credentials = JSON.parse(GOOGLE_SHEETS_CREDENTIALS);
   const auth = new google.auth.GoogleAuth({
     credentials,
@@ -52,18 +47,16 @@ exports.handler = async (event) => {
   
   let values;
   if (type === 'user') {
-      // Order must match the sheet columns: id, name, photoUrl
+      // Columns: id, name, photoUrl
       values = [[data.id, data.name, data.photoUrl]];
   } else { // record
-      // Order must match the sheet columns: id, userId, distance, date, ranWithOthers, recordPhotoUrls, togetherPhotoUrls
+      // Columns: id, userId, distance, date, recordPhotoUrls
       values = [[
           data.id,
           data.userId,
           data.distance,
           data.date,
-          data.ranWithOthers,
           JSON.stringify(data.recordPhotoUrls),
-          JSON.stringify(data.togetherPhotoUrls)
       ]];
   }
 
@@ -75,9 +68,7 @@ exports.handler = async (event) => {
       spreadsheetId: SPREADSHEET_ID,
       range: `${sheetName}!A:A`,
       valueInputOption: 'USER_ENTERED',
-      resource: {
-        values,
-      },
+      resource: { values },
     });
 
     return createResponse(200, { success: true, added: data });

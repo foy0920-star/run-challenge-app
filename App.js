@@ -6,7 +6,6 @@ import SubmitRecord from './components/SubmitRecord.js';
 import Register from './components/Register.js';
 import Dashboard from './components/Dashboard.js';
 
-// 앱 설정이 올바르지 않을 때 표시할 전용 컴포넌트
 const AppNotConfigured = () => {
   return React.createElement('div', { className: "max-w-5xl mx-auto p-4 sm:p-6 lg:p-8" },
     React.createElement('div', { className: "text-center p-10 bg-slate-800/80 rounded-lg backdrop-blur-sm border border-red-500/50" },
@@ -17,7 +16,6 @@ const AppNotConfigured = () => {
   );
 };
 
-// 주 앱 로직을 포함하고 컨텍스트를 사용하는 컴포넌트
 const AppContent = () => {
   const { isLoading, isConfigured } = useAppContext();
   const [currentPage, setCurrentPage] = useState(Page.Submit);
@@ -37,19 +35,16 @@ const AppContent = () => {
     }
   };
   
-  // 초기 데이터 로딩 중일 때 로딩 인디케이터 표시
   if (isLoading) {
     return React.createElement('div', { className: "flex justify-center items-center h-screen" },
-      React.createElement('div', { className: "text-center text-slate-400" }, "앱을 초기화하는 중입니다...")
+      React.createElement('div', { className: "text-center text-slate-400" }, "데이터를 불러오는 중입니다...")
     );
   }
 
-  // 설정이 올바르지 않으면 설정 오류 화면 표시
   if (!isConfigured) {
     return React.createElement(AppNotConfigured);
   }
 
-  // 모든 것이 정상이면 전체 앱 UI 렌더링
   return React.createElement(React.Fragment, null,
     React.createElement(Header, { currentPage: currentPage, setCurrentPage: setCurrentPage }),
     React.createElement('main', { className: "p-4 sm:p-6 lg:p-8 max-w-5xl mx-auto" },

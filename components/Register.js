@@ -2,7 +2,7 @@ import React, { useState, useCallback } from 'react';
 import { useAppContext } from '../context/AppContext.js';
 
 const Register = ({ onRegisterSuccess }) => {
-  const { addUser, error } = useAppContext();
+  const { addUser } = useAppContext();
   const [name, setName] = useState('');
   const [photo, setPhoto] = useState(null);
   const [preview, setPreview] = useState(null);
@@ -72,7 +72,7 @@ const Register = ({ onRegisterSuccess }) => {
             )
           )
         ),
-        (error || formError) && React.createElement('p', { className: "text-red-400 text-sm text-center" }, error || formError),
+        formError && React.createElement('p', { className: "text-red-400 text-sm text-center" }, formError),
         React.createElement('button', {
           type: "submit",
           disabled: isSubmitting || !name,

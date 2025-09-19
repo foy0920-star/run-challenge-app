@@ -1,0 +1,5 @@
+{
+  "name": "Son Goku Run Challenge",
+  "description": "An application for participants of the Son Goku Run Challenge to submit their records and view leaderboards. Track your progress, compete with others, and reach new milestones!",
+  "requestFramePermissions": []
+}

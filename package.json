@@ -1,15 +1,22 @@
 {
-  "name": "run-challenge-app-netlify-functions",
-  "version": "1.0.0",
-  "description": "Dependencies for Netlify Functions for the Run Challenge App",
-  "main": "index.js",
+  "name": "원당-손오공-크로스핏-런-챌린지",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
   },
-  "author": "",
-  "license": "ISC",
   "dependencies": {
-    "@vercel/blob": "^0.23.2",
-    "googleapis": "^140.0.1"
+    "react-dom": "^19.1.1",
+    "react": "^19.1.1",
+    "react-router-dom": "^7.9.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.14.0",
+    "@vitejs/plugin-react": "^5.0.0",
+    "typescript": "~5.8.2",
+    "vite": "^6.2.0"
   }
 }

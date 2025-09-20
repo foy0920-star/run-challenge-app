@@ -1,5 +1,5 @@
 {
-  "name": "원당 손오공 크로스핏 런 챌린지",
-  "description": "An application for participants of the Wondang Son-Goku CrossFit Run Challenge to submit their records and view a competitive dashboard. Track your progress, challenge your friends, and reach new levels!",
+  "name": "손오공 런 챌린지",
+  "description": "A web application for the Son Goku Run Challenge, allowing participants to register, submit their runs, and view a competitive dashboard. The app is designed to be mobile-first and fast, with data managed locally.",
   "requestFramePermissions": []
 }

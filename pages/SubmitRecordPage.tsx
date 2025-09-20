@@ -1,206 +1,153 @@
+
 import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
-import { useParticipants } from '../context/ParticipantsContext';
+import { useNavigate } from 'react-router-dom';
+import { Participant, RunRecord } from '../types';
+import { PhotoIcon, RunningIcon } from '../components/icons';
 
-const resizeImage = (file: File): Promise<string> => {
-  const MAX_WIDTH = 1920;
-  const MAX_HEIGHT = 1920;
-  const QUALITY = 0.8;
+interface SubmitRecordPageProps {
+  participants: Participant[];
+  addRunRecord: (record: Omit<RunRecord, 'id' | 'date'>) => void;
+}
 
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.readAsDataURL(file);
-    reader.onload = (event) => {
-      const img = new Image();
-      img.src = event.target?.result as string;
-      img.onload = () => {
-        const canvas = document.createElement('canvas');
-        let { width, height } = img;
+const FileInput: React.FC<{id: string, label: string, isRequired: boolean, onChange: (file: string | null) => void}> = ({ id, label, isRequired, onChange }) => {
+    const [preview, setPreview] = useState<string | null>(null);
 
-        if (width > height) {
-          if (width > MAX_WIDTH) {
-            height = Math.round(height * (MAX_WIDTH / width));
-            width = MAX_WIDTH;
-          }
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.files && e.target.files[0]) {
+            const file = e.target.files[0];
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                const result = reader.result as string;
+                setPreview(result);
+                onChange(result);
+            };
+            reader.readAsDataURL(file);
         } else {
-          if (height > MAX_HEIGHT) {
-            width = Math.round(width * (MAX_HEIGHT / height));
-            height = MAX_HEIGHT;
-          }
+            setPreview(null);
+            onChange(null);
         }
-
-        canvas.width = width;
-        canvas.height = height;
-        const ctx = canvas.getContext('2d');
-        if (!ctx) {
-          return reject(new Error('Canvas 2D context is not available.'));
-        }
-        ctx.drawImage(img, 0, 0, width, height);
-        resolve(canvas.toDataURL('image/jpeg', QUALITY));
-      };
-      img.onerror = (error) => reject(error);
     };
-    reader.onerror = (error) => reject(error);
-  });
+
+    return (
+        <div>
+            <label className="block text-sm font-medium text-gray-300 mb-1">{label} {isRequired && <span className="text-red-500">*</span>}</label>
+            <label htmlFor={id} className="cursor-pointer bg-gray-800 border-2 border-dashed border-gray-600 rounded-md p-4 flex flex-col items-center justify-center text-gray-400 hover:border-yellow-500 hover:text-yellow-500 transition-colors">
+                {preview ? (
+                    <img src={preview} alt="Preview" className="w-20 h-20 rounded-md object-cover" />
+                ) : (
+                    <>
+                        <PhotoIcon className="w-10 h-10" />
+                        <span className="mt-2 text-xs">사진 업로드</span>
+                    </>
+                )}
+            </label>
+            <input id={id} type="file" accept="image/*" onChange={handleChange} className="hidden" />
+        </div>
+    );
 };
 
-const SubmitRecordPage: React.FC = () => {
-  const { participants, addRun } = useParticipants();
-  const navigate = useNavigate();
-  
-  const [selectedParticipantId, setSelectedParticipantId] = useState('');
+
+const SubmitRecordPage: React.FC<SubmitRecordPageProps> = ({ participants, addRunRecord }) => {
+  const [participantId, setParticipantId] = useState('');
   const [distance, setDistance] = useState('');
-  const [proofPhoto, setProofPhoto] = useState<File | null>(null);
-  const [proofPhotoPreview, setProofPhotoPreview] = useState<string | null>(null);
-  const [togetherPhoto, setTogetherPhoto] = useState<File | null>(null);
-  const [togetherPhotoPreview, setTogetherPhotoPreview] = useState<string | null>(null);
+  const [recordPhoto, setRecordPhoto] = useState<string | null>(null);
+  const [groupRunPhoto, setGroupRunPhoto] = useState<string | null>(null);
   const [error, setError] = useState('');
-  const [isProcessing, setIsProcessing] = useState(false);
+  const navigate = useNavigate();
 
-  const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>, type: 'proof' | 'together') => {
-    if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0];
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const result = reader.result as string;
-        if (type === 'proof') {
-          setProofPhoto(file);
-          setProofPhotoPreview(result);
-        } else {
-          setTogetherPhoto(file);
-          setTogetherPhotoPreview(result);
-        }
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedParticipantId || !distance || !proofPhoto) {
-      setError('이름, 달린 거리, 기록 증명 사진을 모두 입력해주세요.');
+    if (!participantId) {
+      setError('이름을 선택해주세요.');
       return;
     }
-    const distNum = parseFloat(distance);
-    if (isNaN(distNum) || distNum <= 0) {
-      setError('유효한 거리를 입력해주세요.');
+    if (!distance || isNaN(parseFloat(distance)) || parseFloat(distance) <= 0) {
+      setError('올바른 거리를 입력해주세요.');
       return;
     }
-    setError('');
-    setIsProcessing(true);
+    if (!recordPhoto) {
+      setError('기록 사진은 필수입니다.');
+      return;
+    }
 
-    try {
-      const proofPhotoBase64 = await resizeImage(proofPhoto);
-      const togetherPhotoBase64 = togetherPhoto ? await resizeImage(togetherPhoto) : undefined;
-      addRun(selectedParticipantId, distNum, proofPhotoBase64, togetherPhotoBase64);
-      navigate('/dashboard');
-    } catch (err) {
-      setError('이미지 처리 중 오류가 발생했습니다. 다시 시도해주세요.');
-      console.error(err);
-    } finally {
-      setIsProcessing(false);
+    const newRecord: Omit<RunRecord, 'id' | 'date'> = {
+      participantId,
+      distance: parseFloat(distance),
+      recordPhotoUrl: recordPhoto,
+    };
+    if (groupRunPhoto) {
+      newRecord.groupRunPhotoUrl = groupRunPhoto;
     }
+
+    addRunRecord(newRecord);
+    navigate('/dashboard');
   };
-  
-  if (participants.length === 0) {
-    return (
-      <div className="min-h-screen flex items-center justify-center text-center p-4">
-        <div className="bg-slate-800 p-10 rounded-xl shadow-2xl">
-          <h2 className="text-2xl font-bold text-orange-500 mb-4">아직 등록된 참가자가 없습니다!</h2>
-          <p className="text-slate-300 mb-6">기록을 제출하려면 먼저 참가자 등록을 해야 합니다.</p>
-          <Link
-            to="/register"
-            className="py-3 px-6 bg-orange-600 hover:bg-orange-700 rounded-lg text-white font-bold transition duration-300"
-          >
-            등록 페이지로 가기
-          </Link>
-        </div>
-      </div>
-    );
-  }
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4">
-      <div className="max-w-md w-full bg-slate-800 rounded-xl shadow-2xl p-8 space-y-6">
-        <h2 className="text-center text-3xl font-extrabold text-orange-500">달리기 기록 제출</h2>
-        <form onSubmit={handleSubmit} className="space-y-4">
+    <div className="p-4 max-w-md mx-auto">
+      <div className="text-center mb-8">
+        <h1 className="text-4xl font-extrabold text-yellow-400 tracking-tight">기록 제출</h1>
+        <p className="text-gray-400 mt-2">오늘의 달리기를 기록하고 공유하세요!</p>
+      </div>
+      
+      {participants.length === 0 ? (
+        <div className="text-center bg-gray-800 p-6 rounded-lg">
+            <p className="text-gray-300">아직 등록된 참가자가 없습니다.</p>
+            <button onClick={() => navigate('/register')} className="mt-4 inline-block bg-yellow-400 text-gray-900 font-bold py-2 px-4 rounded-lg hover:bg-yellow-500 transition-colors">
+                참가자 등록하기
+            </button>
+        </div>
+      ) : (
+        <form onSubmit={handleSubmit} className="space-y-6 bg-gray-800 p-6 rounded-xl shadow-lg">
           <div>
-            <label htmlFor="participant" className="text-sm font-bold text-slate-300 block mb-2">이름을 선택하세요</label>
+            <label htmlFor="participant" className="block text-sm font-medium text-gray-300">이름</label>
             <select
               id="participant"
-              value={selectedParticipantId}
-              onChange={(e) => setSelectedParticipantId(e.target.value)}
-              className="w-full p-3 bg-slate-700 border border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
-              required
+              value={participantId}
+              onChange={(e) => setParticipantId(e.target.value)}
+              className="mt-1 block w-full pl-3 pr-10 py-2 bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-yellow-500 focus:border-yellow-500 sm:text-sm text-white"
             >
-              <option value="" disabled>-- 참가자 선택 --</option>
+              <option value="" disabled>참가자를 선택하세요</option>
               {participants.map(p => (
                 <option key={p.id} value={p.id}>{p.name}</option>
               ))}
             </select>
           </div>
-          <div className={!selectedParticipantId ? 'opacity-50' : ''}>
-            <label htmlFor="distance" className="text-sm font-bold text-slate-300 block mb-2">달린 거리 (km)</label>
-            <input
-              type="number"
-              id="distance"
-              value={distance}
-              onChange={(e) => setDistance(e.target.value)}
-              step="0.01"
-              min="0"
-              className="w-full p-3 bg-slate-700 border border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
-              placeholder="예: 5.3"
-              required
-              disabled={!selectedParticipantId}
-            />
-          </div>
-          <div className={!selectedParticipantId ? 'opacity-50' : ''}>
-            <label htmlFor="proof-photo" className="text-sm font-bold text-slate-300 block mb-2">기록 증명 사진</label>
-            <input
-              type="file"
-              id="proof-photo"
-              accept="image/*"
-              onChange={(e) => handlePhotoChange(e, 'proof')}
-              className="w-full text-sm text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-orange-100 file:text-orange-700 hover:file:bg-orange-200"
-              required
-              disabled={!selectedParticipantId}
-            />
-          </div>
-           <div className={!selectedParticipantId ? 'opacity-50' : ''}>
-            <label htmlFor="together-photo" className="text-sm font-bold text-slate-300 block mb-2">함께 달리기 사진 (선택)</label>
-            <input
-              type="file"
-              id="together-photo"
-              accept="image/*"
-              onChange={(e) => handlePhotoChange(e, 'together')}
-              className="w-full text-sm text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-orange-100 file:text-orange-700 hover:file:bg-orange-200"
-              disabled={!selectedParticipantId}
-            />
-          </div>
-          <div className="flex justify-around space-x-4">
-            {proofPhotoPreview && (
-                <div className="flex flex-col items-center">
-                    <p className="text-xs text-slate-400 mb-1">기록 증명</p>
-                    <img src={proofPhotoPreview} alt="기록 증명 미리보기" className="max-h-28 rounded-lg border-2 border-slate-600" />
+
+          <div>
+            <label htmlFor="distance" className="block text-sm font-medium text-gray-300">달린 거리 (km)</label>
+            <div className="mt-1 relative rounded-md shadow-sm">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <RunningIcon className="h-5 w-5 text-gray-400" />
                 </div>
-            )}
-            {togetherPhotoPreview && (
-                <div className="flex flex-col items-center">
-                    <p className="text-xs text-slate-400 mb-1">함께 달리기</p>
-                    <img src={togetherPhotoPreview} alt="함께 달리기 미리보기" className="max-h-28 rounded-lg border-2 border-slate-600" />
-                </div>
-            )}
+                <input
+                    type="number"
+                    step="0.01"
+                    id="distance"
+                    value={distance}
+                    onChange={(e) => setDistance(e.target.value)}
+                    className="bg-gray-700 border border-gray-600 text-white block w-full pl-10 pr-3 py-2 rounded-md focus:outline-none focus:ring-yellow-500 focus:border-yellow-500 sm:text-sm"
+                    placeholder="5.2"
+                />
+            </div>
           </div>
-          {error && <p className="text-red-500 text-sm text-center">{error}</p>}
+          
+          <div className="grid grid-cols-2 gap-4">
+            <FileInput id="record-photo" label="기록 사진" isRequired={true} onChange={setRecordPhoto} />
+            <FileInput id="group-run-photo" label="함께 달리기" isRequired={false} onChange={setGroupRunPhoto} />
+          </div>
+
+          {error && <p className="text-red-400 text-sm text-center pt-2">{error}</p>}
+          
           <button
             type="submit"
-            disabled={!selectedParticipantId || isProcessing}
-            className="w-full py-3 px-4 bg-orange-600 hover:bg-orange-700 rounded-lg text-white font-bold text-lg transition duration-300 transform hover:scale-105 disabled:bg-slate-600 disabled:cursor-not-allowed disabled:transform-none"
+            className="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-lg font-bold text-gray-900 bg-yellow-400 hover:bg-yellow-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500 focus:ring-offset-gray-900 transition-transform transform hover:scale-105 disabled:bg-gray-500 disabled:cursor-not-allowed"
+            disabled={!participantId}
           >
-            {isProcessing ? '제출 중...' : '기록 제출'}
+            제출하기
           </button>
         </form>
-      </div>
+      )}
     </div>
   );
 };

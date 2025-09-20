@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { Participant, RunRecord, RunnerLevel, ParticipantStats } from '../types';
-import { RUNNER_LEVELS, GOLD_LEVEL_MIN_DISTANCE, GOLD_LEVEL_COLOR } from '../constants';
+import { RUNNER_LEVELS } from '../constants';
 import { EditIcon, TrashIcon, GoldMedalIcon, SilverMedalIcon, BronzeMedalIcon } from '../components/icons';
 
 interface DashboardPageProps {
@@ -11,7 +11,7 @@ interface DashboardPageProps {
 }
 
 const getRunnerLevel = (distance: number): RunnerLevel => {
-    return RUNNER_LEVELS.find(level => distance >= level.minDistance) || RUNNER_LEVELS[RUNNER_LEVELS.length - 1];
+    return RUNNER_LEVELS.find(level => distance >= level.minDistance) ?? RUNNER_LEVELS[RUNNER_LEVELS.length - 1];
 };
 
 const Podium: React.FC<{ title: string; top3: ParticipantStats[]; statKey: 'totalDistance' | 'groupRunCount' }> = ({ title, top3, statKey }) => {
@@ -157,23 +157,33 @@ const ParticipantCard: React.FC<{
     onEdit: () => void;
 }> = ({ participant, rank, onEdit }) => {
     const level = getRunnerLevel(participant.totalDistance);
-    const nextLevel = RUNNER_LEVELS[RUNNER_LEVELS.indexOf(level) - 1];
-    const progress = nextLevel ? (participant.totalDistance - level.minDistance) / (nextLevel.minDistance - level.minDistance) * 100 : 100;
-    const remaining = nextLevel ? (nextLevel.minDistance - participant.totalDistance).toFixed(1) : 0;
+    const currentLevelIndex = RUNNER_LEVELS.findIndex(l => l.minDistance === level.minDistance);
+    const nextLevel = currentLevelIndex > 0 ? RUNNER_LEVELS[currentLevelIndex - 1] : null;
     
-    const bgColor = participant.totalDistance >= GOLD_LEVEL_MIN_DISTANCE ? GOLD_LEVEL_COLOR : level.color;
+    const progress = nextLevel 
+        ? (participant.totalDistance - level.minDistance) / (nextLevel.minDistance - level.minDistance) * 100 
+        : 100;
+    
+    const remaining = nextLevel 
+        ? (nextLevel.minDistance - participant.totalDistance).toFixed(1) 
+        : 0;
+    
+    const bgColor = level.color;
+    // 런린이 레벨일 때만 글자색을 다르게 적용
+    const textColor = level.minDistance === 0 ? 'text-gray-900' : 'text-white';
+
 
     return (
-        <div className={`p-4 rounded-xl shadow-md flex space-x-4 items-center ${bgColor} text-gray-900`}>
+        <div className={`p-4 rounded-xl shadow-md flex space-x-4 items-center ${bgColor} ${textColor}`}>
             <div className="text-2xl font-bold w-8 text-center">{rank}</div>
             <img src={participant.photoUrl} alt={participant.name} className="w-16 h-16 rounded-full object-cover border-2 border-white" />
             <div className="flex-grow">
                 <div className="flex justify-between items-center">
                     <h3 className="font-bold text-lg">{participant.name}</h3>
-                    <button onClick={onEdit} className="text-gray-700 hover:text-black"><EditIcon /></button>
+                    <button onClick={onEdit} className="hover:opacity-75"><EditIcon /></button>
                 </div>
                 <p className="font-semibold text-xl">{participant.totalDistance.toFixed(1)} km</p>
-                <div className="text-xs space-x-2">
+                <div className="text-xs space-x-2 opacity-90">
                     <span>달리기: {participant.runCount}회</span>
                     <span>함께: {participant.groupRunCount}회</span>
                 </div>
@@ -182,7 +192,7 @@ const ParticipantCard: React.FC<{
                         <span>{level.name} ({level.level})</span>
                         {nextLevel && <span>다음 레벨까지 {remaining}km</span>}
                     </div>
-                    <div className="w-full bg-gray-600 bg-opacity-50 rounded-full h-2">
+                    <div className="w-full bg-black bg-opacity-20 rounded-full h-2">
                         <div className="bg-white rounded-full h-2" style={{ width: `${progress}%` }}></div>
                     </div>
                 </div>
@@ -224,11 +234,10 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ participants, runRecords,
             
             <div className="mt-8">
                 <h2 className="text-2xl font-bold text-center mb-4 text-yellow-400">전체 순위</h2>
-                 <div className="bg-gray-800 p-2 rounded-lg mb-4">
-                    <p className="text-sm text-gray-300"><strong>레벨 가이드:</strong></p>
-                    <div className="flex flex-wrap text-xs mt-1 gap-x-2 gap-y-1">
-                        {RUNNER_LEVELS.map(l => <span key={l.name}><span className={`${l.textColor}`}>●</span> {l.minDistance}km: {l.name}</span>)}
-                        <span><span className="text-yellow-400">●</span> {GOLD_LEVEL_MIN_DISTANCE}km+: ★황금 레벨★</span>
+                 <div className="bg-gray-800 p-3 rounded-lg mb-4">
+                    <p className="text-sm text-gray-300 font-bold">레벨 가이드</p>
+                    <div className="flex flex-wrap text-xs mt-2 gap-x-3 gap-y-1">
+                        {RUNNER_LEVELS.slice(0).reverse().map(l => <span key={l.name}><span className={`${l.textColor}`}>●</span> {l.minDistance}km: {l.name}</span>)}
                     </div>
                 </div>
                 <div className="space-y-4">

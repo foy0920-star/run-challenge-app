@@ -77,8 +77,8 @@ const SubmitRecordPage: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedParticipantId || !distance || !proofPhoto || !togetherPhoto) {
-      setError('모든 항목을 입력해주세요.');
+    if (!selectedParticipantId || !distance || !proofPhoto) {
+      setError('이름, 달린 거리, 기록 증명 사진을 모두 입력해주세요.');
       return;
     }
     const distNum = parseFloat(distance);
@@ -91,7 +91,7 @@ const SubmitRecordPage: React.FC = () => {
 
     try {
       const proofPhotoBase64 = await resizeImage(proofPhoto);
-      const togetherPhotoBase64 = await resizeImage(togetherPhoto);
+      const togetherPhotoBase64 = togetherPhoto ? await resizeImage(togetherPhoto) : undefined;
       addRun(selectedParticipantId, distNum, proofPhotoBase64, togetherPhotoBase64);
       navigate('/dashboard');
     } catch (err) {
@@ -167,14 +167,13 @@ const SubmitRecordPage: React.FC = () => {
             />
           </div>
            <div className={!selectedParticipantId ? 'opacity-50' : ''}>
-            <label htmlFor="together-photo" className="text-sm font-bold text-slate-300 block mb-2">함께 달리기 사진</label>
+            <label htmlFor="together-photo" className="text-sm font-bold text-slate-300 block mb-2">함께 달리기 사진 (선택)</label>
             <input
               type="file"
               id="together-photo"
               accept="image/*"
               onChange={(e) => handlePhotoChange(e, 'together')}
               className="w-full text-sm text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-orange-100 file:text-orange-700 hover:file:bg-orange-200"
-              required
               disabled={!selectedParticipantId}
             />
           </div>

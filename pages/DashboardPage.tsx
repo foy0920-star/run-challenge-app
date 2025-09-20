@@ -1,7 +1,8 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useParticipants } from '../context/ParticipantsContext';
 import { LEVELS } from '../constants';
-import type { Participant, Level } from '../types';
+import type { Participant, Level, RunRecord } from '../types';
+import ManageRecordsModal from '../components/ManageRecordsModal';
 
 interface ParticipantStats extends Participant {
   totalDistance: number;
@@ -15,7 +16,7 @@ const getLevelForDistance = (distance: number): Level => {
   return LEVELS.find(level => distance >= level.minDistance) ?? LEVELS[LEVELS.length - 1];
 };
 
-const ParticipantCard: React.FC<{ participant: ParticipantStats; rank: number }> = ({ participant, rank }) => {
+const ParticipantCard: React.FC<{ participant: ParticipantStats; rank: number; onManage: () => void }> = ({ participant, rank, onManage }) => {
   const { level, nextLevel, totalDistance } = participant;
   const progressPercentage = nextLevel ? ((totalDistance - level.minDistance) / (nextLevel.minDistance - level.minDistance)) * 100 : 100;
 
@@ -28,6 +29,12 @@ const ParticipantCard: React.FC<{ participant: ParticipantStats; rank: number }>
           <h3 className="text-xl font-bold">{participant.name}</h3>
           <p className="text-sm font-semibold opacity-90">{level.name}</p>
         </div>
+        <button
+            onClick={onManage}
+            className="bg-slate-700/50 text-white text-xs font-bold py-1 px-3 rounded-full hover:bg-slate-600 transition-colors"
+        >
+            기록 관리
+        </button>
       </div>
       <div className="text-center">
         <p className="text-4xl font-extrabold">{participant.totalDistance.toFixed(1)} <span className="text-xl font-semibold">km</span></p>
@@ -53,7 +60,6 @@ const ParticipantCard: React.FC<{ participant: ParticipantStats; rank: number }>
 const PodiumItem: React.FC<{ participant: ParticipantStats; rank: number; metric: string; metricValue: string | number }> = ({ participant, rank, metric, metricValue }) => {
   const rankStyles = {
     1: { order: 2, transform: 'translateY(-1.5rem) scale(1.1)', color: 'bg-amber-400', medal: '🥇' },
-    // FIX: Added 'transform: undefined' to ensure consistent object shape and prevent type errors when accessing 'style.transform'.
     2: { order: 1, color: 'bg-slate-300', medal: '🥈', transform: undefined },
     3: { order: 3, color: 'bg-orange-400', medal: '🥉', transform: undefined },
   };
@@ -104,6 +110,7 @@ const Legend: React.FC = () => (
 
 const DashboardPage: React.FC = () => {
   const { participants } = useParticipants();
+  const [managingParticipantId, setManagingParticipantId] = useState<string | null>(null);
 
   const processedParticipants = useMemo<ParticipantStats[]>(() => {
     return participants.map(p => {
@@ -119,6 +126,7 @@ const DashboardPage: React.FC = () => {
         level,
         nextLevel,
         progressToNextLevel: nextLevel ? nextLevel.minDistance - totalDistance : 0,
+        runs: [...p.runs].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()),
       };
     });
   }, [participants]);
@@ -132,6 +140,21 @@ const DashboardPage: React.FC = () => {
       .filter(p => p.runCount > 0)
       .sort((a, b) => b.runCount - a.runCount);
   }, [processedParticipants]);
+
+  const managingParticipant = useMemo(() => {
+    return managingParticipantId
+      ? processedParticipants.find(p => p.id === managingParticipantId)
+      : null;
+  }, [processedParticipants, managingParticipantId]);
+  
+  const handleManageRecords = (participant: ParticipantStats) => {
+    setManagingParticipantId(participant.id);
+  };
+
+  const handleCloseModal = () => {
+    setManagingParticipantId(null);
+  };
+
 
   if (participants.length === 0) {
     return (
@@ -168,10 +191,22 @@ const DashboardPage: React.FC = () => {
         <Legend />
         <div className="space-y-4">
             {rankedByDistance.map((p, index) => (
-            <ParticipantCard key={p.id} participant={p} rank={index + 1} />
+              <ParticipantCard 
+                key={p.id} 
+                participant={p} 
+                rank={index + 1} 
+                onManage={() => handleManageRecords(p)}
+              />
             ))}
         </div>
       </div>
+
+      {managingParticipant && (
+        <ManageRecordsModal 
+          participant={managingParticipant}
+          onClose={handleCloseModal}
+        />
+      )}
     </div>
   );
 };

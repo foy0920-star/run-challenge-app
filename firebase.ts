@@ -9,12 +9,12 @@ import "firebase/compat/firestore";
 // 3. 'SDK 설정 및 구성' 단계에서 '구성' 옵션을 선택하면 이 코드를 찾을 수 있습니다.
 const firebaseConfig = {
   apiKey: "AIzaSyDm6BUNlS5Dq4G3J4vfvAPL0dIq1o0zMYw",
-  authDomain: "runrunrun-8fee2.firebaseapp.com",
-  projectId: "runrunrun-8fee2",
-  storageBucket: "runrunrun-8fee2.firebasestorage.app",
-  messagingSenderId: "782513723357",
-  appId: "1:782513723357:web:b1ea67908e5ce98c184834",
-  measurementId: "G-4SJ9C6BFZ9"
+  authDomain: "runrunrun-8fee2.firebaseapp.com",
+  projectId: "runrunrun-8fee2",
+  storageBucket: "runrunrun-8fee2.firebasestorage.app",
+  messagingSenderId: "782513723357",
+  appId: "1:782513723357:web:b1ea67908e5ce98c184834",
+  measurementId: "G-4SJ9C6BFZ9"
 };
 
 // Initialize Firebase

@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import type { Participant, RunRecord } from '../types';
+import { v4 as uuidv4 } from 'uuid';
 
 interface ParticipantsContextType {
   participants: Participant[];
@@ -36,7 +37,7 @@ export const ParticipantsProvider: React.FC<{ children: ReactNode }> = ({ childr
 
   const addParticipant = (name: string, photo: string) => {
     const newParticipant: Participant = {
-      id: crypto.randomUUID(),
+      id: uuidv4(),
       name,
       photo,
       runs: [],
@@ -46,7 +47,7 @@ export const ParticipantsProvider: React.FC<{ children: ReactNode }> = ({ childr
 
   const addRun = (participantId: string, distance: number, photo: string, togetherPhoto?: string) => {
     const newRun: RunRecord = {
-      id: crypto.randomUUID(),
+      id: uuidv4(),
       distance,
       photo,
       togetherPhoto: togetherPhoto || '',
